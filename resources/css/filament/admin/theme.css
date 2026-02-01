@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@source '../../../vendor/filament/**/*.blade.php';
+@source '../../../vendor/filament/**/*.php';
+@source '../../views/**/*.blade.php';
+
+@theme {
+    --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+    body {
+        background: #f7f4ec;
+    }
+
+    .fi-body {
+        font-family: var(--font-sans);
+    }
+}
+
+@layer components {
+    .sw-dashboard {
+        color: #0f172a;
+    }
+
+    .sw-card {
+        @apply rounded-2xl border border-slate-100 bg-white p-5 shadow-sm;
+    }
+
+    .sw-card__label {
+        @apply text-xs font-semibold uppercase tracking-[0.3em] text-slate-500;
+    }
+
+    .sw-card__value {
+        @apply mt-3 text-4xl font-semibold text-slate-900;
+    }
+
+    .sw-card__meta {
+        @apply mt-2 text-xs text-slate-500;
+    }
+
+    .sw-panel {
+        @apply rounded-3xl border border-slate-100 bg-white p-6 shadow-sm;
+    }
+
+    .sw-panel__header {
+        @apply mb-6 flex flex-wrap items-center justify-between gap-4;
+    }
+
+    .sw-panel__title {
+        @apply text-lg font-semibold text-slate-900;
+    }
+
+    .sw-panel__subtitle {
+        @apply text-xs text-slate-500;
+    }
+
+    .sw-pill {
+        @apply inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-emerald-700;
+    }
+
+    .sw-pill--alert {
+        @apply bg-rose-100 text-rose-700;
+    }
+
+    .sw-pill--warn {
+        @apply bg-amber-100 text-amber-700;
+    }
+}
