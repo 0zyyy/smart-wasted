@@ -51,10 +51,6 @@ a[href="/admin"],
 }
 
 
-.dark .fi-sidebar-item {
-    @apply px-2 py-1;
-}
-
 .dark .fi-sidebar-item > a,
 .dark .fi-sidebar-item > button {
     @apply transition-all duration-300 ease-in-out relative overflow-hidden px-4 py-2.5;
@@ -119,7 +115,6 @@ a[href="/admin"],
     color: white;
 }
 
-/* Scrollbar - Dark */
 .dark .fi-sidebar-nav::-webkit-scrollbar-thumb {
     background: #2E2A5B;
     border-radius: 10px;
@@ -150,23 +145,22 @@ a[href="/admin"],
 .fi-sidebar-item-active > button,
 .fi-sidebar-item.fi-active > a,
 .fi-sidebar-item.fi-active > button {
-    background-color: #f3f4f6;
-    color: #4f46e5;
-    box-shadow: none;
-    border: 1px solid #e5e7eb;
+    background-color: #4f46e5 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1);
+    border: 1px solid #4f46e5;
 }
 
 .fi-sidebar-item-active .fi-sidebar-item-icon,
 .fi-sidebar-item.fi-active .fi-sidebar-item-icon {
-    color: #4f46e5;
+    color: #ffffff !important;
 }
 
 .fi-sidebar-item-active .fi-sidebar-item-label,
 .fi-sidebar-item.fi-active .fi-sidebar-item-label {
-    color: #4f46e5 !important;
+    color: #ffffff !important;
 }
 
-/* Remove "Double Shape" in Light Mode too */
 .fi-sidebar-item-active,
 .fi-sidebar-item.fi-active {
     background: transparent !important;
@@ -177,10 +171,9 @@ a[href="/admin"],
 .fi-sidebar-item > button {
     @apply transition-all duration-300 ease-in-out relative overflow-hidden px-4 py-2.5;
     border-radius: 12px;
-    border: 1px solid transparent; /* Prevent layout shift on active */
+    border: 1px solid transparent;
 }
 
-/* Hover State - Light */
 .fi-sidebar-item:hover:not(.fi-sidebar-item-active):not(.fi-active) > a,
 .fi-sidebar-item:hover:not(.fi-sidebar-item-active):not(.fi-active) > button {
     background-color: #f9fafb;
