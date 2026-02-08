@@ -27,12 +27,25 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->viteTheme('resources/css/filament/admin/theme.css')
+            ->sidebarCollapsibleOnDesktop()
             ->login()
             ->registration()
             ->passwordReset()
+            ->globalSearch(true)
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::SIDEBAR_NAV_START,
+                fn () => view('filament.hooks.sidebar-header')
+            )
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::TOPBAR_START,
+                fn () => view('filament.hooks.topbar-start')
+            )
+            ->brandName('')
             ->colors([
                 'primary' => Color::Emerald,
             ])
+            ->maxContentWidth('full')
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
             ->pages([

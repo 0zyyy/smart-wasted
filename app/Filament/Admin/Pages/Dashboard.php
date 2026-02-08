@@ -13,7 +13,7 @@ class Dashboard extends BaseDashboard
 {
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-home';
 
-    protected static ?string $title = 'Smart Waste Dashboard';
+    protected static ?string $title = 'Dashboard';
 
     // Define which widgets to show and in what order
     public function getWidgets(): array
