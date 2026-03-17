@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Models\Alert;
+use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -18,7 +19,14 @@ class OpenAlertsQueueWidget extends BaseWidget
     protected ?string $pollingInterval = '10s';
 
     #[\Livewire\Attributes\On('alert-created')]
-    public function refresh(): void {}
+    public function refresh(array $alertData = []): void
+    {
+        Notification::make()
+            ->title('Bin Overflow Alert')
+            ->body($alertData['description'] ?? 'A bin has reached overflow level.')
+            ->danger()
+            ->send();
+    }
 
     public function table(Table $table): Table
     {
