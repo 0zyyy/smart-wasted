@@ -12,10 +12,9 @@ class StatsOverviewWidget extends BaseWidget
 
     protected ?string $pollingInterval = '10s';
 
-    protected $listeners = [
-        'echo:measurements,MeasurementCreated' => '$refresh',
-        'echo:alerts,AlertCreated' => '$refresh',
-    ];
+    #[\Livewire\Attributes\On('measurement-created')]
+    #[\Livewire\Attributes\On('alert-created')]
+    public function refresh(): void {}
 
     protected function getStats(): array
     {

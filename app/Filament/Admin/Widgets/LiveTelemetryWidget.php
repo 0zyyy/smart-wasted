@@ -17,9 +17,8 @@ class LiveTelemetryWidget extends BaseWidget
 
     protected ?string $pollingInterval = '10s';
 
-    protected $listeners = [
-        'echo:measurements,MeasurementCreated' => '$refresh',
-    ];
+    #[\Livewire\Attributes\On('measurement-created')]
+    public function refresh(): void {}
 
     public function table(Table $table): Table
     {

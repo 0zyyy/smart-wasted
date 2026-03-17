@@ -17,9 +17,8 @@ class OpenAlertsQueueWidget extends BaseWidget
 
     protected ?string $pollingInterval = '10s';
 
-    protected $listeners = [
-        'echo:alerts,AlertCreated' => '$refresh',
-    ];
+    #[\Livewire\Attributes\On('alert-created')]
+    public function refresh(): void {}
 
     public function table(Table $table): Table
     {

@@ -17,3 +17,12 @@ window.Echo = new Echo({
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
     enabledTransports: ['ws', 'wss'],
 });
+
+// Bridge Echo events → Livewire dispatches so widgets refresh instantly
+window.Echo.channel('measurements').listen('MeasurementCreated', () => {
+    Livewire.dispatch('measurement-created');
+});
+
+window.Echo.channel('alerts').listen('AlertCreated', () => {
+    Livewire.dispatch('alert-created');
+});
