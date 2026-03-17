@@ -6,6 +6,7 @@ use App\Filament\Admin\Widgets\LiveTelemetryWidget;
 use App\Filament\Admin\Widgets\LocationFillWidget;
 use App\Filament\Admin\Widgets\OpenAlertsQueueWidget;
 use App\Filament\Admin\Widgets\SensorHealthWidget;
+use App\Filament\Admin\Widgets\BinFillTrendWidget;
 use App\Filament\Admin\Widgets\FillLevelTrendWidget;
 use App\Filament\Admin\Widgets\StatsOverviewWidget;
 use App\Filament\Admin\Widgets\UpcomingCollectionsWidget;
@@ -25,9 +26,7 @@ class Dashboard extends BaseDashboard
             StatsOverviewWidget::class,
             LiveTelemetryWidget::class,
             OpenAlertsQueueWidget::class,
-            SensorHealthWidget::class,
             LocationFillWidget::class,
-            UpcomingCollectionsWidget::class,
             FillLevelTrendWidget::class,
         ];
     }
@@ -35,6 +34,6 @@ class Dashboard extends BaseDashboard
     // Optional: Customize the number of columns
     public function getColumns(): array|int
     {
-        return 2;
+        return 3;
     }
 }

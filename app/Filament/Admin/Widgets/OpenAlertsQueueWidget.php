@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Widgets;
 use App\Models\Alert;
 use Filament\Notifications\Notification;
 use Filament\Tables;
+use Filament\Actions\Action;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 
@@ -65,6 +66,26 @@ class OpenAlertsQueueWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('timestamp')
                     ->label('Triggered')
                     ->since(),
+            ])
+            ->actions([
+                Action::make('acknowledge')
+                    ->label('Acknowledge')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('warning')
+                    ->visible(fn (Alert $record): bool => $record->status === Alert::STATUS_OPEN)
+                    ->action(function (Alert $record): void {
+                        $record->status = Alert::STATUS_ACKNOWLEDGED;
+                        $record->save();
+                        $record->logActivity(
+                            action: 'acknowledged',
+                            note: 'Acknowledged from dashboard.',
+                            actorId: auth()->id(),
+                        );
+                        Notification::make()
+                            ->title('Alert acknowledged')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->searchable(false)
             ->paginated(false);

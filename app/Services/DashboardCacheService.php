@@ -76,41 +76,47 @@ class DashboardCacheService
         });
     }
 
-    /**
-     * Fill percentages per location for the bar chart.
-     */
     public static function getLocationFill(): array
     {
         return Cache::remember(self::KEY_LOCATION_FILL, self::TTL, function () {
-            $locations = Location::withCount('bins')->get();
+            $locations = Location::orderBy('name')->get();
+            $binTypes  = ['Organic', 'Anorganic', 'B3'];
+            $colors    = [
+                'Organic'   => 'rgba(16, 185, 129, 0.8)',
+                'Anorganic' => 'rgba(59, 130, 246, 0.8)',
+                'B3'        => 'rgba(245, 158, 11, 0.8)',
+            ];
 
-            $labels = [];
-            $fillPercentages = [];
-            $colors = [];
+            $datasets = [];
+            foreach ($binTypes as $type) {
+                $data = [];
+                foreach ($locations as $location) {
+                    $fill = Measurement::whereHas('sensor', function ($q) use ($location, $type) {
+                        $q->where('type', 'Ultrasonic')
+                          ->whereHas('bin', fn ($q2) => $q2
+                              ->where('location_id', $location->location_id)
+                              ->where('type', $type));
+                    })
+                        ->where('unit', '%')
+                        ->latest('timestamp')
+                        ->value('value');
 
-            foreach ($locations as $location) {
-                $labels[] = $location->name;
-
-                $avgFill = Measurement::whereHas('sensor.bin', function ($query) use ($location) {
-                    $query->where('location_id', $location->location_id);
-                })
-                    ->where('unit', 'LIKE', '%')
-                    ->latest('timestamp')
-                    ->limit(50)
-                    ->avg('value');
-
-                $fillPercentages[] = round($avgFill ?? 0, 1);
-
-                if ($avgFill >= 80) {
-                    $colors[] = 'rgb(239, 68, 68)';
-                } elseif ($avgFill >= 60) {
-                    $colors[] = 'rgb(245, 158, 11)';
-                } else {
-                    $colors[] = 'rgb(16, 185, 129)';
+                    $data[] = round($fill ?? 0, 1);
                 }
+
+                $datasets[] = [
+                    'label'           => $type,
+                    'data'            => $data,
+                    'backgroundColor' => $colors[$type],
+                    'borderColor'     => $colors[$type],
+                    'borderWidth'     => 1,
+                ];
             }
 
-            return compact('labels', 'fillPercentages', 'colors');
+            return [
+                'labels'   => $locations->pluck('name')->toArray(),
+                'datasets' => $datasets,
+            ];
         });
     }
 
