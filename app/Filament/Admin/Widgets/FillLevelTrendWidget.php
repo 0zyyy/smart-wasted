@@ -18,16 +18,15 @@ class FillLevelTrendWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $hours = collect(range(23, 0))->map(fn($h) => now()->subHours($h)->startOfHour());
+        $hours = collect(range(23, 0))->map(fn ($h) => now()->subHours($h)->startOfHour());
 
-        $labels = $hours->map(fn(Carbon $h) => $h->format('H:i'))->toArray();
+        $labels = $hours->map(fn (Carbon $h) => $h->format('H:i'))->toArray();
 
-        // Get avg fill % per hour across all ultrasonic sensors
         $readings = Measurement::query()
             ->where('unit', '%')
             ->where('timestamp', '>=', now()->subHours(24))
-            ->selectRaw('AVG(value) as avg_fill, strftime(\'%Y-%m-%d %H\', timestamp) as hour_key')
-            ->groupByRaw('strftime(\'%Y-%m-%d %H\', timestamp)')
+            ->selectRaw('AVG(value) as avg_fill, DATE_FORMAT(timestamp, \'%Y-%m-%d %H\') as hour_key')
+            ->groupByRaw('DATE_FORMAT(timestamp, \'%Y-%m-%d %H\')')
             ->orderBy('hour_key')
             ->pluck('avg_fill', 'hour_key');
 
