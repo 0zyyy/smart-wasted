@@ -19,10 +19,10 @@ window.Echo = new Echo({
 });
 
 // Bridge Echo events → Livewire dispatches so widgets refresh instantly
-window.Echo.channel('measurements').listen('MeasurementCreated', () => {
+window.Echo.channel('measurements').listen('.MeasurementCreated', () => {
     Livewire.dispatch('measurement-created');
 });
 
-window.Echo.channel('alerts').listen('AlertCreated', () => {
+window.Echo.channel('alerts').listen('.AlertCreated', () => {
     Livewire.dispatch('alert-created');
 });
