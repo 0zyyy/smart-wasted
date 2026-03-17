@@ -15,7 +15,11 @@ class LiveTelemetryWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected ?string $pollingInterval = '3s';
+    protected ?string $pollingInterval = '10s';
+
+    protected $listeners = [
+        'echo:measurements,MeasurementCreated' => '$refresh',
+    ];
 
     public function table(Table $table): Table
     {

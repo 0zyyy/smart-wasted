@@ -12,6 +12,11 @@ class StatsOverviewWidget extends BaseWidget
 
     protected ?string $pollingInterval = '10s';
 
+    protected $listeners = [
+        'echo:measurements,MeasurementCreated' => '$refresh',
+        'echo:alerts,AlertCreated' => '$refresh',
+    ];
+
     protected function getStats(): array
     {
         $stats = DashboardCacheService::getStats();

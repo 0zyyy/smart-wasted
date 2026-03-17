@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSensorDataRequest;
 use App\Events\AlertCreated;
+use App\Events\MeasurementCreated;
 use App\Models\Alert;
 use App\Models\Bin;
 use App\Models\Measurement;
@@ -58,6 +59,7 @@ class SensorDataController extends Controller
                         'value' => $weight,
                         'unit' => 'g',
                     ]);
+                    event(new MeasurementCreated($measurement));
                     $anyCreated = true;
                 }
 
@@ -77,6 +79,7 @@ class SensorDataController extends Controller
                         'value' => $volume,
                         'unit' => '%',
                     ]);
+                    event(new MeasurementCreated($measurement));
                     $anyCreated = true;
                 }
 

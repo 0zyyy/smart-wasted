@@ -17,6 +17,10 @@ class OpenAlertsQueueWidget extends BaseWidget
 
     protected ?string $pollingInterval = '10s';
 
+    protected $listeners = [
+        'echo:alerts,AlertCreated' => '$refresh',
+    ];
+
     public function table(Table $table): Table
     {
         return $table

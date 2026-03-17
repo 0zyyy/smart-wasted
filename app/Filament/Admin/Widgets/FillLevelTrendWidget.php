@@ -10,7 +10,7 @@ class FillLevelTrendWidget extends ChartWidget
 {
     protected static ?int $sort = 7;
 
-    protected static ?string $heading = 'Fill Level Trend (Last 24h)';
+    protected ?string $heading = 'Fill Level Trend (Last 24h)';
 
     protected ?string $pollingInterval = '30s';
 
@@ -18,9 +18,9 @@ class FillLevelTrendWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $hours = collect(range(23, 0))->map(fn ($h) => now()->subHours($h)->startOfHour());
+        $hours = collect(range(23, 0))->map(fn($h) => now()->subHours($h)->startOfHour());
 
-        $labels = $hours->map(fn (Carbon $h) => $h->format('H:i'))->toArray();
+        $labels = $hours->map(fn(Carbon $h) => $h->format('H:i'))->toArray();
 
         // Get avg fill % per hour across all ultrasonic sensors
         $readings = Measurement::query()
