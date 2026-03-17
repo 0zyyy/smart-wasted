@@ -31,6 +31,7 @@ class AnalysisResultResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('bin.location'))
             ->columns([
                 Tables\Columns\TextColumn::make('result_id')
                     ->label('ID')

@@ -29,6 +29,7 @@ class AlertActivityResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['alert.bin.location', 'actor']))
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('When')

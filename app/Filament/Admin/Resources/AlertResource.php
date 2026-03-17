@@ -87,6 +87,7 @@ class AlertResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['bin.location', 'assignedTo']))
             ->columns([
                 Tables\Columns\TextColumn::make('alert_id')
                     ->label('ID')
@@ -230,10 +231,10 @@ class AlertResource extends Resource
                             ->get();
 
                         return view('filament.admin.alerts.details', [
-                            'action' => $action,
-                            'alert' => $record,
+                            'action'             => $action,
+                            'alert'              => $record,
                             'recentMeasurements' => $recentMeasurements,
-                            'activities' => $record->activities()->limit(15)->get(),
+                            'activities'         => $record->activities->take(15),
                         ]);
                     }),
                 Actions\Action::make('acknowledge')
@@ -263,10 +264,9 @@ class AlertResource extends Resource
                         $record->update([
                             'assigned_to' => (int) $data['assigned_to'],
                         ]);
-                        $assignee = User::find($data['assigned_to']);
                         $record->logActivity(
                             'assigned',
-                            $data['note'] ?? ('Assigned to ' . ($assignee?->name ?? 'user #' . $data['assigned_to'])),
+                            $data['note'] ?? ('Assigned to user #' . $data['assigned_to']),
                             auth()->id(),
                             ['assigned_to' => (int) $data['assigned_to']]
                         );

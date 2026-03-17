@@ -58,6 +58,7 @@ class MaintenanceLogResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('sensor.bin.location'))
             ->columns([
                 Tables\Columns\TextColumn::make('log_id')
                     ->label('ID')

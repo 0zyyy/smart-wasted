@@ -20,15 +20,12 @@ class DashboardCacheService
     private const KEY_LOCATION_FILL = 'sw:dash:location_fill';
     private const KEY_TRANSMISSION_RATE = 'sw:dash:transmission_rate';
 
-    /**
-     * Core dashboard stats: counts, active/silent sensors, maintenance due.
-     */
     public static function getStats(): array
     {
         return Cache::remember(self::KEY_STATS, self::TTL, function () {
             $now = now();
-            $sensorFreshCutoff = $now->copy()->subMinutes(10);
-            $maintenanceCutoff = $now->copy()->subMonths(6);
+            $sensorFreshCutoff  = $now->copy()->subMinutes(10);
+            $maintenanceCutoff  = $now->copy()->subMonths(6);
 
             $activeSensors = Sensor::whereHas('measurements', function ($query) use ($sensorFreshCutoff): void {
                 $query->where('timestamp', '>=', $sensorFreshCutoff);
@@ -43,14 +40,13 @@ class DashboardCacheService
                 ->count();
 
             return [
-                'locations' => Location::count(),
-                'locations_list' => Location::withCount('bins')->orderBy('name')->limit(6)->get(),
-                'bins' => Bin::count(),
-                'sensors' => Sensor::count(),
-                'measurements' => Measurement::count(),
-                'alerts_open' => Alert::where('is_resolved', false)->count(),
-                'active_sensors' => $activeSensors,
-                'silent_sensors' => $silentSensors,
+                'locations'       => Location::count(),
+                'locations_list'  => Location::withCount('bins')->orderBy('name')->limit(6)->get(),
+                'bins'            => Bin::count(),
+                'sensors'         => Sensor::count(),
+                'alerts_open'     => Alert::where('is_resolved', false)->count(),
+                'active_sensors'  => $activeSensors,
+                'silent_sensors'  => $silentSensors,
                 'maintenance_due' => $dueMaintenance,
             ];
         });
@@ -79,7 +75,7 @@ class DashboardCacheService
     public static function getLocationFill(): array
     {
         return Cache::remember(self::KEY_LOCATION_FILL, self::TTL, function () {
-            $locations = Location::orderBy('name')->get();
+            $locations = Location::orderBy('name')->get()->keyBy('location_id');
             $binTypes  = ['Organic', 'Anorganic', 'B3'];
             $colors    = [
                 'Organic'   => 'rgba(16, 185, 129, 0.8)',
@@ -87,23 +83,27 @@ class DashboardCacheService
                 'B3'        => 'rgba(245, 158, 11, 0.8)',
             ];
 
+            // Single query: latest fill % per bin, joined to location
+            $fills = Measurement::query()
+                ->select('measurements.value', 'bins.type as bin_type', 'bins.location_id')
+                ->join('sensors', 'measurements.sensor_id', '=', 'sensors.sensor_id')
+                ->join('bins', 'sensors.bin_id', '=', 'bins.bin_id')
+                ->where('sensors.type', 'Ultrasonic')
+                ->where('measurements.unit', '%')
+                ->whereIn('bins.location_id', $locations->keys())
+                ->whereIn('bins.type', $binTypes)
+                ->orderByDesc('measurements.timestamp')
+                ->get()
+                ->unique(fn ($r) => $r->location_id . '|' . $r->bin_type)
+                ->keyBy(fn ($r) => $r->location_id . '|' . $r->bin_type);
+
             $datasets = [];
             foreach ($binTypes as $type) {
                 $data = [];
                 foreach ($locations as $location) {
-                    $fill = Measurement::whereHas('sensor', function ($q) use ($location, $type) {
-                        $q->where('type', 'Ultrasonic')
-                          ->whereHas('bin', fn ($q2) => $q2
-                              ->where('location_id', $location->location_id)
-                              ->where('type', $type));
-                    })
-                        ->where('unit', '%')
-                        ->latest('timestamp')
-                        ->value('value');
-
-                    $data[] = round($fill ?? 0, 1);
+                    $key = $location->location_id . '|' . $type;
+                    $data[] = round($fills->get($key)?->value ?? 0, 1);
                 }
-
                 $datasets[] = [
                     'label'           => $type,
                     'data'            => $data,
@@ -114,26 +114,22 @@ class DashboardCacheService
             }
 
             return [
-                'labels'   => $locations->pluck('name')->toArray(),
+                'labels'   => $locations->pluck('name')->values()->toArray(),
                 'datasets' => $datasets,
             ];
         });
     }
 
-    /**
-     * Transmission success rate (last hour).
-     */
     public static function getTransmissionRate(): ?int
     {
         return Cache::remember(self::KEY_TRANSMISSION_RATE, self::TTL, function () {
-            $transmissionWindow = now()->subHour();
+            $row = DataTransmission::where('timestamp', '>=', now()->subHour())
+                ->selectRaw('COUNT(*) as total, SUM(successful) as successful')
+                ->first();
 
-            $total = DataTransmission::where('timestamp', '>=', $transmissionWindow)->count();
-            $successful = DataTransmission::where('timestamp', '>=', $transmissionWindow)
-                ->where('successful', true)
-                ->count();
-
-            return $total > 0 ? (int) round(($successful / $total) * 100) : null;
+            return $row && $row->total > 0
+                ? (int) round(($row->successful / $row->total) * 100)
+                : null;
         });
     }
 

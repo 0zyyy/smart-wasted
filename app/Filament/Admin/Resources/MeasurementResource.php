@@ -31,6 +31,7 @@ class MeasurementResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with('sensor.bin.location'))
             ->columns([
                 Tables\Columns\TextColumn::make('measurement_id')
                     ->label('ID')
