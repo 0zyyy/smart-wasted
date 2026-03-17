@@ -46,6 +46,8 @@ class AdminPanelProvider extends PanelProvider
                 \Filament\View\PanelsRenderHook::HEAD_END,
                 fn () => new HtmlString(app(\Illuminate\Foundation\Vite::class)(['resources/js/app.js']))
             )
+            ->databaseNotifications()
+            ->databaseNotificationsPolling('10s')
             ->brandName('')
             ->colors([
                 'primary' => Color::Emerald,
