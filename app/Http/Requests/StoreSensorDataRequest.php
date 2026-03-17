@@ -9,7 +9,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreSensorDataRequest extends FormRequest
 {
-    private const VALID_LOCATIONS = ['BB102', 'BB202', 'AA107', 'AA108'];
+    private const // Locations are validated dynamically from the database;
 
     private const BIN_TYPE_MAP = [
         'organik' => 'Organic',
@@ -57,12 +57,14 @@ class StoreSensorDataRequest extends FormRequest
 
     public function rules(): array
     {
+        $validLocations = \App\Models\Location::pluck('name')->toArray();
+
         return [
             'bin_type_input' => ['required', 'string'],
             'bin_type' => ['required', Rule::in(['Organic', 'Anorganic', 'B3'])],
             'weight' => ['required', 'numeric', 'min:0'],
             'volume' => ['required', 'numeric', 'between:0,100'],
-            'location' => ['required', 'string', Rule::in(self::VALID_LOCATIONS)],
+            'location' => ['required', 'string', Rule::in($validLocations)],
         ];
     }
 

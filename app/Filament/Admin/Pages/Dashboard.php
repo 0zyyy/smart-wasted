@@ -6,7 +6,9 @@ use App\Filament\Admin\Widgets\LiveTelemetryWidget;
 use App\Filament\Admin\Widgets\LocationFillWidget;
 use App\Filament\Admin\Widgets\OpenAlertsQueueWidget;
 use App\Filament\Admin\Widgets\SensorHealthWidget;
+use App\Filament\Admin\Widgets\FillLevelTrendWidget;
 use App\Filament\Admin\Widgets\StatsOverviewWidget;
+use App\Filament\Admin\Widgets\UpcomingCollectionsWidget;
 use BackedEnum;
 use Filament\Pages\Dashboard as BaseDashboard;
 
@@ -25,6 +27,8 @@ class Dashboard extends BaseDashboard
             OpenAlertsQueueWidget::class,
             SensorHealthWidget::class,
             LocationFillWidget::class,
+            UpcomingCollectionsWidget::class,
+            FillLevelTrendWidget::class,
         ];
     }
 

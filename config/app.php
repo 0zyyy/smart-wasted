@@ -99,6 +99,8 @@ return [
 
     'key' => env('APP_KEY'),
 
+    'sensor_api_key' => env('SENSOR_API_KEY'),
+
     'previous_keys' => [
         ...array_filter(
             explode(',', (string) env('APP_PREVIOUS_KEYS', ''))
