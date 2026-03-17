@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Models\Sensor;
+use App\Services\DashboardCacheService;
 use Filament\Widgets\ChartWidget;
 
 class SensorHealthWidget extends ChartWidget
@@ -11,7 +11,7 @@ class SensorHealthWidget extends ChartWidget
 
     protected static ?int $sort = 2;
 
-    protected int | string | array $columnSpan = 1;
+    protected int|string|array $columnSpan = 1;
 
     public function getPollingInterval(): ?string
     {
@@ -20,21 +20,13 @@ class SensorHealthWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $cutoff = now()->subMinutes(10);
-
-        $activeSensors = Sensor::whereHas('measurements', function ($query) use ($cutoff) {
-            $query->where('timestamp', '>=', $cutoff);
-        })->count();
-
-        $silentSensors = Sensor::whereDoesntHave('measurements', function ($query) use ($cutoff) {
-            $query->where('timestamp', '>=', $cutoff);
-        })->count();
+        $health = DashboardCacheService::getSensorHealth();
 
         return [
             'datasets' => [
                 [
                     'label' => 'Sensors',
-                    'data' => [$activeSensors, $silentSensors],
+                    'data' => [$health['active'], $health['silent']],
                     'backgroundColor' => [
                         'rgb(16, 185, 129)',  // emerald-500 for active
                         'rgb(239, 68, 68)',   // red-500 for silent
@@ -61,3 +53,4 @@ class SensorHealthWidget extends ChartWidget
         ];
     }
 }
+

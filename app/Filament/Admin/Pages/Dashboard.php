@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Pages;
 
 use App\Filament\Admin\Widgets\LiveTelemetryWidget;
 use App\Filament\Admin\Widgets\LocationFillWidget;
+use App\Filament\Admin\Widgets\OpenAlertsQueueWidget;
 use App\Filament\Admin\Widgets\SensorHealthWidget;
 use App\Filament\Admin\Widgets\StatsOverviewWidget;
 use BackedEnum;
@@ -21,6 +22,7 @@ class Dashboard extends BaseDashboard
         return [
             StatsOverviewWidget::class,
             LiveTelemetryWidget::class,
+            OpenAlertsQueueWidget::class,
             SensorHealthWidget::class,
             LocationFillWidget::class,
         ];

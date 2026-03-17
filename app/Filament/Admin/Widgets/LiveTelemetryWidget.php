@@ -30,9 +30,6 @@ class LiveTelemetryWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('sensor.bin.location.name')
                     ->label('Location')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('sensor.sensor_id')
-                    ->label('Sensor')
-                    ->prefix('#'),
                 Tables\Columns\TextColumn::make('sensor.type')
                     ->label('Type')
                     ->badge()

@@ -3,73 +3,29 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreSensorDataRequest;
+use App\Events\AlertCreated;
 use App\Models\Alert;
 use App\Models\Bin;
 use App\Models\Measurement;
 use App\Models\Sensor;
+use App\Models\User;
+use App\Services\DashboardCacheService;
+use Filament\Notifications\Notification as FilamentNotification;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class SensorDataController extends Controller
 {
-    /**
-     * Receive data from ESP32 IoT device.
-     * 
-     * Supports both GET (ESP32 format) and POST:
-     * GET: ?lokasi=organik&berat=1250&volume=75&device=BB102
-     * POST: { "bin_type": "organik", "weight": 1250, "volume": 75, "location": "BB102" }
-     */
-    public function store(Request $request): JsonResponse
+    private const DUPLICATE_WINDOW_SECONDS = 15;
+
+    public function store(StoreSensorDataRequest $request): JsonResponse
     {
-        // Support both GET (ESP32) and POST formats
-        if ($request->isMethod('get')) {
-            // ESP32 format: ?lokasi=organik&berat=123&volume=45&device=BB102
-            $binType = $request->query('lokasi', $request->query('bin_type'));
-            $weight = $request->query('berat', $request->query('weight'));
-            $volume = $request->query('volume');
-            $location = $request->query('device', $request->query('location', 'BB102'));
-        } else {
-            // POST JSON format
-            $binType = $request->input('lokasi', $request->input('bin_type'));
-            $weight = $request->input('berat', $request->input('weight'));
-            $volume = $request->input('volume');
-            $location = $request->input('device', $request->input('location', 'BB102'));
-        }
-
-        // Validate required fields
-        if (!$binType || $weight === null || $volume === null) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Missing required fields: lokasi/bin_type, berat/weight, volume',
-            ], 400);
-        }
-
-        // Normalize bin type to match database values
-        $binTypeMap = [
-            'organik' => 'Organic',
-            'anorganik' => 'Anorganic',
-            'b3' => 'B3',
-            'organic' => 'Organic',
-            'anorganic' => 'Anorganic',
-        ];
-        
-        $normalizedBinType = $binTypeMap[strtolower($binType)] ?? null;
-        
-        if (!$normalizedBinType) {
-            return response()->json([
-                'status' => 'error',
-                'message' => "Invalid bin type: {$binType}. Use: organik, anorganik, b3",
-            ], 400);
-        }
-
-        // Validate location
-        $validLocations = ['BB102', 'BB202', 'AA107', 'AA108'];
-        if (!in_array($location, $validLocations)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => "Invalid location: {$location}. Use: " . implode(', ', $validLocations),
-            ], 400);
-        }
+        $validated = $request->validated();
+        $normalizedBinType = $validated['bin_type'];
+        $location = $validated['location'];
+        $weight = (float) $validated['weight'];
+        $volume = (float) $validated['volume'];
 
         // Find the bin at this location
         $bin = Bin::whereHas('location', function ($query) use ($location) {
@@ -85,54 +41,89 @@ class SensorDataController extends Controller
 
         $now = now();
         $createdMeasurements = [];
+        $anyCreated = false;
 
         // Get both sensors for this bin
         $sensors = Sensor::where('bin_id', $bin->bin_id)->get();
 
         foreach ($sensors as $sensor) {
             if ($sensor->type === 'Loadcell') {
-                // Store weight measurement (grams)
-                $measurement = Measurement::create([
-                    'sensor_id' => $sensor->sensor_id,
-                    'timestamp' => $now,
-                    'value' => (float) $weight,
-                    'unit' => 'g',
-                ]);
+                $measurement = $this->findRecentDuplicateMeasurement($sensor->sensor_id, $weight, 'g', $now);
+                $duplicate = $measurement !== null;
+
+                if (!$measurement) {
+                    $measurement = Measurement::create([
+                        'sensor_id' => $sensor->sensor_id,
+                        'timestamp' => $now,
+                        'value' => $weight,
+                        'unit' => 'g',
+                    ]);
+                    $anyCreated = true;
+                }
+
                 $createdMeasurements[] = [
                     'type' => 'weight',
                     'measurement_id' => $measurement->measurement_id,
+                    'duplicate' => $duplicate,
                 ];
             } elseif ($sensor->type === 'Ultrasonic') {
-                // Store volume percentage
-                $measurement = Measurement::create([
-                    'sensor_id' => $sensor->sensor_id,
-                    'timestamp' => $now,
-                    'value' => (float) $volume,
-                    'unit' => '%',
-                ]);
+                $measurement = $this->findRecentDuplicateMeasurement($sensor->sensor_id, $volume, '%', $now);
+                $duplicate = $measurement !== null;
+
+                if (!$measurement) {
+                    $measurement = Measurement::create([
+                        'sensor_id' => $sensor->sensor_id,
+                        'timestamp' => $now,
+                        'value' => $volume,
+                        'unit' => '%',
+                    ]);
+                    $anyCreated = true;
+                }
+
                 $createdMeasurements[] = [
                     'type' => 'volume',
                     'measurement_id' => $measurement->measurement_id,
+                    'duplicate' => $duplicate,
                 ];
 
                 // Auto-create alert if bin is >= 80% full
-                if ((float) $volume >= 80) {
+                if ($volume >= 80) {
                     $existingAlert = Alert::where('bin_id', $bin->bin_id)
                         ->where('type', 'Overflow')
                         ->where('is_resolved', false)
                         ->first();
 
                     if (!$existingAlert) {
-                        Alert::create([
+                        $alert = Alert::create([
                             'bin_id' => $bin->bin_id,
                             'timestamp' => $now,
                             'type' => 'Overflow',
                             'description' => "Bin {$normalizedBinType} at {$location} is {$volume}% full (PENUH)",
+                            'status' => Alert::STATUS_OPEN,
+                            'severity' => Alert::SEVERITY_CRITICAL,
+                            'last_seen_at' => $now,
                             'is_resolved' => false,
                         ]);
+
+                        $alert->logActivity('opened', 'Alert generated from sensor overflow rule.');
+
+                        event(new AlertCreated($alert));
+
+                        $admins = User::all();
+                        FilamentNotification::make()
+                            ->title('Bin Overflow Alert')
+                            ->body("Bin {$normalizedBinType} at {$location} is {$volume}% full.")
+                            ->danger()
+                            ->sendToDatabase($admins);
+                    } else {
+                        $existingAlert->update(['last_seen_at' => $now]);
                     }
                 }
             }
+        }
+
+        if ($anyCreated) {
+            DashboardCacheService::bust();
         }
 
         return response()->json([
@@ -140,7 +131,19 @@ class SensorDataController extends Controller
             'bin_id' => $bin->bin_id,
             'location' => $location,
             'bin_type' => $normalizedBinType,
+            'deduplicated' => !$anyCreated,
             'measurements' => $createdMeasurements,
-        ], 201);
+        ], $anyCreated ? 201 : 200);
+    }
+
+    private function findRecentDuplicateMeasurement(int $sensorId, float $value, string $unit, Carbon $now): ?Measurement
+    {
+        return Measurement::query()
+            ->where('sensor_id', $sensorId)
+            ->where('unit', $unit)
+            ->where('value', $value)
+            ->where('timestamp', '>=', $now->copy()->subSeconds(self::DUPLICATE_WINDOW_SECONDS))
+            ->orderByDesc('timestamp')
+            ->first();
     }
 }

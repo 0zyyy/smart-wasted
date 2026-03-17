@@ -34,6 +34,8 @@ class AlertCreated implements ShouldBroadcast
             'bin_id' => $this->alert->bin_id,
             'type' => $this->alert->type,
             'description' => $this->alert->description,
+            'status' => $this->alert->status,
+            'severity' => $this->alert->severity,
             'timestamp' => $this->alert->timestamp?->toISOString(),
             'is_resolved' => $this->alert->is_resolved,
         ];

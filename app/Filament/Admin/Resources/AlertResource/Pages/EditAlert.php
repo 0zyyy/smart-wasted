@@ -16,4 +16,13 @@ class EditAlert extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    protected function afterSave(): void
+    {
+        $this->record->logActivity(
+            'updated',
+            'Alert details updated from edit form.',
+            auth()->id()
+        );
+    }
 }

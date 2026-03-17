@@ -6,11 +6,7 @@ use App\Filament\Admin\Resources\MeasurementResource\Pages;
 use App\Models\Measurement;
 use BackedEnum;
 use Filament\Actions;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -28,28 +24,7 @@ class MeasurementResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                Section::make('Measurement Details')
-                    ->schema([
-                        Select::make('sensor_id')
-                            ->relationship('sensor', 'sensor_id')
-                            ->getOptionLabelFromRecordUsing(fn ($record) => "Sensor #{$record->sensor_id} ({$record->type})")
-                            ->required()
-                            ->searchable()
-                            ->preload(),
-                        TextInput::make('value')
-                            ->required()
-                            ->numeric(),
-                        TextInput::make('unit')
-                            ->required()
-                            ->maxLength(32)
-                            ->placeholder('e.g., cm, kg, %'),
-                        DateTimePicker::make('timestamp')
-                            ->default(now()),
-                    ])
-                    ->columns(2),
-            ]);
+        return $schema->components([]);
     }
 
 
@@ -102,7 +77,6 @@ class MeasurementResource extends Resource
     {
         return [
             'index' => Pages\ListMeasurements::route('/'),
-            'create' => Pages\CreateMeasurement::route('/create'),
         ];
     }
 }

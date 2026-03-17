@@ -2,8 +2,7 @@
 
 namespace App\Filament\Admin\Widgets;
 
-use App\Models\Location;
-use App\Models\Measurement;
+use App\Services\DashboardCacheService;
 use Filament\Widgets\ChartWidget;
 
 class LocationFillWidget extends ChartWidget
@@ -21,47 +20,19 @@ class LocationFillWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $locations = Location::withCount('bins')->get();
-        
-        $labels = [];
-        $fillPercentages = [];
-        $colors = [];
-        
-        foreach ($locations as $location) {
-            $labels[] = $location->name;
-            
-            // Get the latest fill level measurement for bins at this location
-            $avgFill = Measurement::whereHas('sensor.bin', function ($query) use ($location) {
-                $query->where('location_id', $location->location_id);
-            })
-            ->where('unit', 'LIKE', '%')
-            ->latest('timestamp')
-            ->limit(50)
-            ->avg('value');
-            
-            $fillPercentages[] = round($avgFill ?? 0, 1);
-            
-            // Color based on fill level
-            if ($avgFill >= 80) {
-                $colors[] = 'rgb(239, 68, 68)';    // Red - needs attention
-            } elseif ($avgFill >= 60) {
-                $colors[] = 'rgb(245, 158, 11)';   // Amber - moderate
-            } else {
-                $colors[] = 'rgb(16, 185, 129)';   // Green - good
-            }
-        }
+        $data = DashboardCacheService::getLocationFill();
 
         return [
             'datasets' => [
                 [
                     'label' => 'Fill %',
-                    'data' => $fillPercentages,
-                    'backgroundColor' => $colors,
-                    'borderColor' => $colors,
+                    'data' => $data['fillPercentages'],
+                    'backgroundColor' => $data['colors'],
+                    'borderColor' => $data['colors'],
                     'borderWidth' => 1,
                 ],
             ],
-            'labels' => $labels,
+            'labels' => $data['labels'],
         ];
     }
 
@@ -92,3 +63,4 @@ class LocationFillWidget extends ChartWidget
         ];
     }
 }
+
