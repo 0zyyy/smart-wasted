@@ -52,23 +52,21 @@ class Alert extends Model
                 $alert->is_resolved = true;
                 $alert->resolved_at ??= now();
             } elseif ($alert->status) {
-                $alert->is_resolved = false;
+                $alert->is_resolved     = false;
+                $alert->resolved_at     = null;
+                $alert->resolution_note = null;
                 if ($alert->status === self::STATUS_OPEN) {
                     $alert->acknowledged_at = null;
                     $alert->acknowledged_by = null;
                 }
-                if ($alert->status !== self::STATUS_RESOLVED) {
-                    $alert->resolved_at = null;
-                    $alert->resolution_note = null;
-                }
             } elseif ($alert->is_resolved) {
-                $alert->status = self::STATUS_RESOLVED;
+                $alert->status      = self::STATUS_RESOLVED;
                 $alert->resolved_at ??= now();
             } else {
                 $alert->status = self::STATUS_OPEN;
             }
 
-            $alert->severity ??= self::SEVERITY_WARNING;
+            $alert->severity    ??= self::SEVERITY_WARNING;
             $alert->last_seen_at ??= $alert->timestamp ?? now();
         });
     }

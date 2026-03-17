@@ -51,23 +51,25 @@ class BinFillTrendWidget extends ChartWidget
                 return $this->emptyDataset($labels);
             }
 
+            $fmt      = $this->hourFormat();
             $readings = Measurement::query()
                 ->where('sensor_id', $ultrasonicSensorId)
                 ->where('unit', '%')
                 ->where('timestamp', '>=', now()->subHours(24))
-                ->selectRaw('AVG(value) as avg_fill, DATE_FORMAT(timestamp, \'%Y-%m-%d %H\') as hour_key')
-                ->groupByRaw('DATE_FORMAT(timestamp, \'%Y-%m-%d %H\')')
+                ->selectRaw("AVG(value) as avg_fill, {$fmt} as hour_key")
+                ->groupByRaw($fmt)
                 ->orderBy('hour_key')
                 ->pluck('avg_fill', 'hour_key');
 
             $bin = Bin::with('location')->find($selectedBinId);
             $datasetLabel = ($bin?->location?->name ?? '?') . ' - ' . ($bin?->type ?? '?') . ' Fill (%)';
         } else {
+            $fmt      = $this->hourFormat();
             $readings = Measurement::query()
                 ->where('unit', '%')
                 ->where('timestamp', '>=', now()->subHours(24))
-                ->selectRaw('AVG(value) as avg_fill, DATE_FORMAT(timestamp, \'%Y-%m-%d %H\') as hour_key')
-                ->groupByRaw('DATE_FORMAT(timestamp, \'%Y-%m-%d %H\')')
+                ->selectRaw("AVG(value) as avg_fill, {$fmt} as hour_key")
+                ->groupByRaw($fmt)
                 ->orderBy('hour_key')
                 ->pluck('avg_fill', 'hour_key');
 
@@ -112,5 +114,12 @@ class BinFillTrendWidget extends ChartWidget
             ],
             'labels' => $labels,
         ];
+    }
+
+    private function hourFormat(): string
+    {
+        return \DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m-%d %H', timestamp)"
+            : "DATE_FORMAT(timestamp, '%Y-%m-%d %H')";
     }
 }

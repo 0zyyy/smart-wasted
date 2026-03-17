@@ -23,17 +23,8 @@ class DashboardCacheService
     public static function getStats(): array
     {
         return Cache::remember(self::KEY_STATS, self::TTL, function () {
-            $now = now();
-            $sensorFreshCutoff  = $now->copy()->subMinutes(10);
-            $maintenanceCutoff  = $now->copy()->subMonths(6);
-
-            $activeSensors = Sensor::whereHas('measurements', function ($query) use ($sensorFreshCutoff): void {
-                $query->where('timestamp', '>=', $sensorFreshCutoff);
-            })->count();
-
-            $silentSensors = Sensor::whereDoesntHave('measurements', function ($query) use ($sensorFreshCutoff): void {
-                $query->where('timestamp', '>=', $sensorFreshCutoff);
-            })->count();
+            $health         = self::getSensorHealth();
+            $maintenanceCutoff = now()->subMonths(6);
 
             $dueMaintenance = Sensor::whereNull('last_maintenance')
                 ->orWhere('last_maintenance', '<=', $maintenanceCutoff)
@@ -45,8 +36,8 @@ class DashboardCacheService
                 'bins'            => Bin::count(),
                 'sensors'         => Sensor::count(),
                 'alerts_open'     => Alert::where('is_resolved', false)->count(),
-                'active_sensors'  => $activeSensors,
-                'silent_sensors'  => $silentSensors,
+                'active_sensors'  => $health['active'],
+                'silent_sensors'  => $health['silent'],
                 'maintenance_due' => $dueMaintenance,
             ];
         });

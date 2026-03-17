@@ -18,32 +18,31 @@ class FillLevelTrendWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $hours = collect(range(23, 0))->map(fn ($h) => now()->subHours($h)->startOfHour());
-
+        $hours  = collect(range(23, 0))->map(fn ($h) => now()->subHours($h)->startOfHour());
         $labels = $hours->map(fn (Carbon $h) => $h->format('H:i'))->toArray();
+        $fmt    = $this->hourFormat();
 
         $readings = Measurement::query()
             ->where('unit', '%')
             ->where('timestamp', '>=', now()->subHours(24))
-            ->selectRaw('AVG(value) as avg_fill, DATE_FORMAT(timestamp, \'%Y-%m-%d %H\') as hour_key')
-            ->groupByRaw('DATE_FORMAT(timestamp, \'%Y-%m-%d %H\')')
+            ->selectRaw("AVG(value) as avg_fill, {$fmt} as hour_key")
+            ->groupByRaw($fmt)
             ->orderBy('hour_key')
             ->pluck('avg_fill', 'hour_key');
 
         $data = $hours->map(function (Carbon $h) use ($readings) {
-            $key = $h->format('Y-m-d H');
-            return round($readings[$key] ?? 0, 1);
+            return round($readings[$h->format('Y-m-d H')] ?? 0, 1);
         })->toArray();
 
         return [
             'datasets' => [
                 [
-                    'label' => 'Avg Fill Level (%)',
-                    'data' => $data,
-                    'borderColor' => 'rgb(16, 185, 129)',
+                    'label'           => 'Avg Fill Level (%)',
+                    'data'            => $data,
+                    'borderColor'     => 'rgb(16, 185, 129)',
                     'backgroundColor' => 'rgba(16, 185, 129, 0.1)',
-                    'fill' => true,
-                    'tension' => 0.4,
+                    'fill'            => true,
+                    'tension'         => 0.4,
                 ],
             ],
             'labels' => $labels,
@@ -53,5 +52,12 @@ class FillLevelTrendWidget extends ChartWidget
     protected function getType(): string
     {
         return 'line';
+    }
+
+    private function hourFormat(): string
+    {
+        return \DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m-%d %H', timestamp)"
+            : "DATE_FORMAT(timestamp, '%Y-%m-%d %H')";
     }
 }

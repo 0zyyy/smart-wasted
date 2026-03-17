@@ -96,7 +96,7 @@ class SensorDataController extends Controller
                     'duplicate'      => $duplicate,
                 ];
 
-                if ($volume >= 80) {
+                if (!$duplicate && $volume >= 80) {
                     $existingAlert = Alert::where('bin_id', $bin->bin_id)
                         ->where('type', 'Overflow')
                         ->where('is_resolved', false)
