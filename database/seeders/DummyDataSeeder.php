@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Bin;
 use App\Models\DataTransmission;
+use App\Models\WasteDetection;
 use App\Models\Location;
 use App\Models\Measurement;
 use App\Models\Sensor;
@@ -52,6 +53,7 @@ class DummyDataSeeder extends Seeder
         DB::table('measurements')->delete();
         DB::table('alerts')->delete();
         DB::table('data_transmissions')->delete();
+        DB::table('waste_detections')->delete();
 
         $interval   = 30;   // minutes between readings
         $days       = 7;
@@ -194,6 +196,61 @@ class DummyDataSeeder extends Seeder
                 $transmissionsBatch  = [];
             }
         }
+
+        // Generate YOLOv8 detection records
+        // ~8-20 detections per hour per location during active hours
+        $locations        = \App\Models\Location::all();
+        $detectionClasses = ['Organic', 'Anorganic', 'B3'];
+        // Organic is most common (~60%), Anorganic ~30%, B3 ~10%
+        $classWeights     = ['Organic' => 60, 'Anorganic' => 30, 'B3' => 10];
+        $detectionsBatch  = [];
+        $totalDetections  = 0;
+
+        foreach ($locations as $location) {
+            $current = $start->copy();
+            while ($current->lte($end)) {
+                $hour      = (int) $current->format('H');
+                $isActive  = $hour >= 7 && $hour <= 22;
+                $perHour   = $isActive ? mt_rand(8, 20) : mt_rand(0, 2);
+
+                for ($i = 0; $i < $perHour; $i++) {
+                    // Pick class by weight
+                    $rand  = mt_rand(1, 100);
+                    $cumul = 0;
+                    $class = 'Organic';
+                    foreach ($classWeights as $c => $w) {
+                        $cumul += $w;
+                        if ($rand <= $cumul) { $class = $c; break; }
+                    }
+
+                    $detectionsBatch[] = [
+                        'location_id'    => $location->location_id,
+                        'detected_class' => $class,
+                        'confidence'     => round($this->randomBetween(0.72, 0.99), 3),
+                        'timestamp'      => $current->copy()->addMinutes(mt_rand(0, 59)),
+                        'device_id'      => 'CAM-' . $location->name,
+                        'latency_ms'     => $this->generateLatency(),
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ];
+                }
+
+                if (count($detectionsBatch) >= 500) {
+                    DB::table('waste_detections')->insert($detectionsBatch);
+                    $totalDetections += count($detectionsBatch);
+                    $detectionsBatch  = [];
+                }
+
+                $current->addHour();
+            }
+        }
+
+        if (!empty($detectionsBatch)) {
+            DB::table('waste_detections')->insert($detectionsBatch);
+            $totalDetections += count($detectionsBatch);
+        }
+
+        $this->command->info("✓ {$totalDetections} YOLOv8 detection records created");
 
         $this->command->info("✓ {$totalMeasurements} measurements created");
         $this->command->info("✓ {$totalTransmissions} transmission records logged (~96% success rate)");

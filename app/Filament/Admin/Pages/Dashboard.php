@@ -7,6 +7,7 @@ use App\Filament\Admin\Widgets\LocationFillWidget;
 use App\Filament\Admin\Widgets\OpenAlertsQueueWidget;
 use App\Filament\Admin\Widgets\BinFillTrendWidget;
 use App\Filament\Admin\Widgets\PipelineHealthWidget;
+use App\Filament\Admin\Widgets\WasteDetectionWidget;
 use App\Filament\Admin\Widgets\FillLevelTrendWidget;
 use App\Filament\Admin\Widgets\StatsOverviewWidget;
 use App\Filament\Admin\Widgets\UpcomingCollectionsWidget;
@@ -27,6 +28,7 @@ class Dashboard extends BaseDashboard
             OpenAlertsQueueWidget::class,
             LocationFillWidget::class,
             FillLevelTrendWidget::class,
+            WasteDetectionWidget::class,
             PipelineHealthWidget::class,
         ];
     }
