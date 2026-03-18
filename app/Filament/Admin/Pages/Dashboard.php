@@ -19,7 +19,6 @@ class Dashboard extends BaseDashboard
 
     protected static ?string $title = 'Dashboard';
 
-    // Define which widgets to show and in what order
     public function getWidgets(): array
     {
         return [
@@ -31,9 +30,8 @@ class Dashboard extends BaseDashboard
         ];
     }
 
-    // Optional: Customize the number of columns
     public function getColumns(): array|int
     {
-        return 3;
+        return ['default' => 1, 'lg' => 2];
     }
 }

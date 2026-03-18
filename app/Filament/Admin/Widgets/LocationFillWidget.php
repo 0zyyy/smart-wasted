@@ -11,7 +11,7 @@ class LocationFillWidget extends ChartWidget
 
     protected static ?int $sort = 4;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int|string|array $columnSpan = ['default' => 1];
 
     public function getPollingInterval(): ?string
     {
