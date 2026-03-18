@@ -9,8 +9,6 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class StoreSensorDataRequest extends FormRequest
 {
-    private const // Locations are validated dynamically from the database;
-
     private const BIN_TYPE_MAP = [
         'organik' => 'Organic',
         'anorganik' => 'Anorganic',
@@ -26,32 +24,34 @@ class StoreSensorDataRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $binTypeInput = $this->isMethod('get')
-            ? $this->query('lokasi', $this->query('bin_type'))
-            : $this->input('lokasi', $this->input('bin_type'));
-
-        $weight = $this->isMethod('get')
-            ? $this->query('berat', $this->query('weight'))
-            : $this->input('berat', $this->input('weight'));
-
-        $volume = $this->isMethod('get')
-            ? $this->query('volume')
-            : $this->input('volume');
-
-        $location = $this->isMethod('get')
-            ? $this->query('device', $this->query('location', 'BB102'))
-            : $this->input('device', $this->input('location', 'BB102'));
+        if ($this->isMethod('get')) {
+            $binTypeInput    = $this->query('tipe');
+            $weight          = $this->query('berat');
+            $volume          = $this->query('volume');
+            $location        = $this->query('lokasi');
+            $deviceId        = $this->query('device');
+            $deviceTimestamp = $this->query('ts');
+        } else {
+            $binTypeInput    = $this->input('bin_type');
+            $weight          = $this->input('weight');
+            $volume          = $this->input('volume');
+            $location        = $this->input('location');
+            $deviceId        = $this->input('device_id');
+            $deviceTimestamp = $this->input('device_timestamp');
+        }
 
         $normalizedBinType = is_string($binTypeInput)
             ? (self::BIN_TYPE_MAP[strtolower(trim($binTypeInput))] ?? null)
             : null;
 
         $this->merge([
-            'bin_type_input' => $binTypeInput,
-            'bin_type' => $normalizedBinType,
-            'weight' => $weight,
-            'volume' => $volume,
-            'location' => is_string($location) ? strtoupper(trim($location)) : $location,
+            'bin_type_input'   => $binTypeInput,
+            'bin_type'         => $normalizedBinType,
+            'weight'           => $weight,
+            'volume'           => $volume,
+            'location'         => is_string($location) ? strtoupper(trim($location)) : $location,
+            'device_id'        => $deviceId,
+            'device_timestamp' => $deviceTimestamp,
         ]);
     }
 
@@ -65,6 +65,8 @@ class StoreSensorDataRequest extends FormRequest
             'weight' => ['required', 'numeric', 'min:0'],
             'volume' => ['required', 'numeric', 'between:0,100'],
             'location' => ['required', 'string', Rule::in($validLocations)],
+            'device_id'        => ['sometimes', 'nullable', 'string', 'max:50'],
+            'device_timestamp' => ['sometimes', 'nullable', 'numeric'],
         ];
     }
 
@@ -79,4 +81,3 @@ class StoreSensorDataRequest extends FormRequest
         );
     }
 }
-

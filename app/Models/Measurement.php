@@ -17,11 +17,13 @@ class Measurement extends Model
         'timestamp',
         'value',
         'unit',
+        'latency_ms',
     ];
 
     protected $casts = [
-        'timestamp' => 'datetime',
-        'value' => 'float',
+        'timestamp'  => 'datetime',
+        'value'      => 'float',
+        'latency_ms' => 'integer',
     ];
 
     public function sensor(): BelongsTo

@@ -10,6 +10,7 @@ use App\Models\Alert;
 use App\Models\Bin;
 use App\Models\Location;
 use App\Models\Measurement;
+use App\Models\DataTransmission;
 use App\Models\Sensor;
 use App\Models\User;
 use App\Services\DashboardCacheService;
@@ -48,7 +49,12 @@ class SensorDataController extends Controller
             $bin->update(['device_id' => $deviceId]);
         }
 
-        $now                 = now();
+        $now             = now();
+        $deviceTimestamp = isset($validated['device_timestamp']) ? (float) $validated['device_timestamp'] : null;
+        $latencyMs       = $deviceTimestamp
+            ? max(0, (int) round((microtime(true) - $deviceTimestamp) * 1000))
+            : null;
+
         $createdMeasurements = [];
         $anyCreated          = false;
 
@@ -61,10 +67,11 @@ class SensorDataController extends Controller
 
                 if (!$measurement) {
                     $measurement = Measurement::create([
-                        'sensor_id' => $sensor->sensor_id,
-                        'timestamp' => $now,
-                        'value'     => $weight,
-                        'unit'      => 'g',
+                        'sensor_id'  => $sensor->sensor_id,
+                        'timestamp'  => $now,
+                        'value'      => $weight,
+                        'unit'       => 'g',
+                        'latency_ms' => $latencyMs,
                     ]);
                     event(new MeasurementCreated($measurement));
                     $anyCreated = true;
@@ -81,10 +88,11 @@ class SensorDataController extends Controller
 
                 if (!$measurement) {
                     $measurement = Measurement::create([
-                        'sensor_id' => $sensor->sensor_id,
-                        'timestamp' => $now,
-                        'value'     => $volume,
-                        'unit'      => '%',
+                        'sensor_id'  => $sensor->sensor_id,
+                        'timestamp'  => $now,
+                        'value'      => $volume,
+                        'unit'       => '%',
+                        'latency_ms' => $latencyMs,
                     ]);
                     event(new MeasurementCreated($measurement));
                     $anyCreated = true;
@@ -129,6 +137,15 @@ class SensorDataController extends Controller
                     }
                 }
             }
+        }
+
+        // Log one transmission record per sensor (tracks delivery reliability)
+        foreach ($sensors as $sensor) {
+            DataTransmission::create([
+                'sensor_id'  => $sensor->sensor_id,
+                'timestamp'  => $now,
+                'successful' => true,
+            ]);
         }
 
         if ($anyCreated) {
